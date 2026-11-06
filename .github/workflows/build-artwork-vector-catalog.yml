@@ -3,10 +3,6 @@ name: Build full artwork vector catalog
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'tools/**'
-      - '.github/workflows/build-artwork-vector-catalog.yml'
 
 permissions:
   contents: read
@@ -20,6 +16,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Find project ZIP
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name 'MDTracker-v1.1.4.42-pc-grid-calibration*.zip' | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Project ZIP not found"
+            exit 1
+          fi
+          echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_ENV"
+
+      - name: Extract project ZIP
+        run: |
+          unzip -oq "$ZIP_FILE" -d "$GITHUB_WORKSPACE"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,9 +39,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install numpy pillow requests
 
-      - name: Check build script
+      - name: Check required files
         run: |
           test -f tools/build_artwork_vector_catalog.py
+          test -f app/src/main/assets/artwork_manifest_index.json
+          echo "Required project files found"
 
       - name: Build full artwork vector catalog
         run: |
@@ -43,11 +54,10 @@ jobs:
           test -s app/src/main/assets/artwork_vectors_v1.bin
           ls -lh app/src/main/assets/artwork_vectors_v1.bin
 
-      - name: Upload full artwork vector catalog
+      - name: Upload vector catalog
         uses: actions/upload-artifact@v4
         with:
           name: full-artwork-vector-catalog
           path: app/src/main/assets/artwork_vectors_v1.bin
           retention-days: 1
           if-no-files-found: error
-
