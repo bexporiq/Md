@@ -1,4 +1,53 @@
+
 name: Build full artwork vector catalog
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'tools/**'
+      - '.github/workflows/build-artwork-vector-catalog.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-artwork-vector-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy pillow requests
+
+      - name: Check build script
+        run: |
+          test -f tools/build_artwork_vector_catalog.py
+
+      - name: Build full artwork vector catalog
+        run: |
+          python tools/build_artwork_vector_catalog.py
+
+      - name: Verify vector catalog
+        run: |
+          test -s app/src/main/assets/artwork_vectors_v1.bin
+          ls -lh app/src/main/assets/artwork_vectors_v1.bin
+
+      - name: Upload full artwork vector catalog
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-artwork-vector-catalog
+          path: app/src/main/assets/artwork_vectors_v1.bin
+          retention-days: 1
+          if-no-files-found: error
+
