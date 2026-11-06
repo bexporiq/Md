@@ -1,1 +1,4 @@
+name: Build full artwork vector catalog
 
+on:
+  workflow_dispatch:
